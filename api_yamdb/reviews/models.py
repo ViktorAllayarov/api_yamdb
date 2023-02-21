@@ -1,4 +1,5 @@
 from django.db import models
+from users.models import User
 
 
 class Category(models.Model):
@@ -28,3 +29,39 @@ class Title(models.Model):
         null=True,
     )
 
+
+class Review(models.Model):
+    user = models.ForeignKey(User,
+                             on_delete=models.CASCADE,
+                             blank=False,
+                             null=False,
+                             related_name='reviews')
+    title = models.ForeignKey(Title,
+                              on_delete=models.CASCADE,
+                              blank=False,
+                              null=False,
+                              related_name='reviews')
+    text = models.TextField()
+    ranking = models.IntegerField(related_name='reviews')
+    created = models.DateTimeField(
+        'Дата добавления', auto_now_add=True, db_index=True)
+
+
+class Comment(models.Model):
+    author = models.ForeignKey(User,
+                               on_delete=models.CASCADE,
+                               blank=False,
+                               null=False,
+                               related_name='comments')
+    review = models.ForeignKey(Review,
+                               on_delete=models.CASCADE,
+                               blank=False,
+                               null=False,
+                               related_name='comments')
+    text = models.TextField(blank=False,
+                            null=False,)
+    created = models.DateTimeField(
+        'Дата добавления', auto_now_add=True, db_index=True)
+
+    class Meta:
+        unique_together = ('author', 'review',)
