@@ -1,12 +1,13 @@
 from django.core.mail import send_mail
 from django.conf import settings
-from django.contrib.auth.tokens import default_token_generator
 from rest_framework.response import Response
 from rest_framework import status, views
 
 from .serializers import AuthSignupSerializer
 from users.models import User
 
+EMAIL_TITLE = 'Приветствуем {}'
+EMAIL_MESSAGE = 'Ваш секретный код: {}'
 
 class AuthSignupView(views.APIView):
     """Класс для регистрации новых пользователей."""
@@ -19,8 +20,8 @@ class AuthSignupView(views.APIView):
             email=serializer.data.get('email'),
         )
         send_mail(
-            f'Приветствуем {serializer.data.get("username")}',
-            f'Ваш секретный код: {user.password}',
+            EMAIL_TITLE.format(serializer.data.get("username")),
+            EMAIL_MESSAGE.format(user.password),
             settings.ADMINS_EMAIL,
             [serializer.data.get("email")],
             fail_silently=False,
