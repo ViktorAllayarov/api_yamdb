@@ -1,7 +1,13 @@
+from api.views import AuthSignupView
 from django.urls import include, path
+from rest_framework.routers import DefaultRouter
 
 app_name = "api"
 
-urlpatterns = [
+router_v1 = DefaultRouter()
 
+
+urlpatterns = [
+    path('v1/auth/signup/', AuthSignupView.as_view()),
+    path('v1/', include(router_v1.urls)),
 ]
