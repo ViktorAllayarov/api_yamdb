@@ -14,7 +14,7 @@ class Genre(models.Model):
 class Title(models.Model):
     name = models.TextField()
     year = models.IntegerField()
-    top = models.IntegerField(null=True)
+    rating = models.IntegerField(null=True)
     description = models.TextField(blank=True, null=True)
     category = models.ForeignKey(
         Category,
