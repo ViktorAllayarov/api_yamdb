@@ -1,10 +1,11 @@
-from api.views import AuthSignupView, GetJWTTokenView
+from api.views import AuthSignupView, GetJWTTokenView, UsersViewSet
 from django.urls import include, path
 from rest_framework.routers import DefaultRouter
 
 app_name = "api"
 
 router_v1 = DefaultRouter()
+router_v1.register(r'users', UsersViewSet)
 
 
 urlpatterns = [

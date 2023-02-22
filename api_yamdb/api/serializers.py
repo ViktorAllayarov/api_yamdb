@@ -26,3 +26,10 @@ class GetJWTTokenSerializer(serializers.Serializer):
                 "Ошибка: не верный confirmation_code"
             )
         return data
+
+
+class UserViewSerializer(serializers.ModelSerializer):
+    
+    class Meta:
+        model = User
+        fields = ("username", "email", "first_name", "last_name", "bio", "role")

@@ -3,11 +3,11 @@ from django.contrib.auth.decorators import login_required
 from django.core.mail import send_mail
 from django.shortcuts import get_object_or_404
 from rest_framework.response import Response
-from rest_framework import status, views
+from rest_framework import permissions, status, views, viewsets
 from rest_framework_simplejwt.tokens import RefreshToken
 
-from .permissions import IsAnonymous
-from .serializers import AuthSignupSerializer, GetJWTTokenSerializer
+from .permissions import IsAnonymous, IsAdminOrReadOnly
+from .serializers import AuthSignupSerializer, GetJWTTokenSerializer, UserViewSerializer
 from users.models import User
 
 EMAIL_TITLE = "Приветствуем {}"
@@ -57,3 +57,9 @@ class GetJWTTokenView(views.APIView):
             {"token": str(refresh.access_token)},
             status=status.HTTP_201_CREATED,
         )
+
+
+class UsersViewSet(viewsets.ModelViewSet):
+    queryset = User.objects.all()
+    serializer_class = UserViewSerializer
+    permission_classes = (permissions.IsAdminUser,)
