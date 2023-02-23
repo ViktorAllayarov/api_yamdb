@@ -1,11 +1,6 @@
-from django.contrib.auth.models import AbstractUser
 from django.db import models
 
 from users.models import User
-
-
-class User(AbstractUser):
-    pass
 
 
 class Category(models.Model):
@@ -19,9 +14,16 @@ class Genre(models.Model):
 
 
 class Title(models.Model):
+    def get_rating(self):
+        reviews = self.reviews.all()
+        score = 0
+        for review in reviews:
+            score += review.score
+        return (score//len(reviews))
+
     name = models.TextField()
     year = models.IntegerField()
-    top = models.IntegerField(null=True)
+    rating = get_rating()
     description = models.TextField(blank=True, null=True)
     category = models.ForeignKey(
         Category,
@@ -37,6 +39,7 @@ class Title(models.Model):
 
 
 class Review(models.Model):
+    '''Модел Отзыва'''
     author = models.ForeignKey(User,
                                on_delete=models.CASCADE,
                                blank=False,
@@ -50,12 +53,13 @@ class Review(models.Model):
                               related_name='reviews'
                               )
     text = models.TextField()
-    score = models.IntegerField(related_name='reviews')
+    score = models.IntegerField()
     pub_date = models.DateTimeField(
         'Дата добавления', auto_now_add=True, db_index=True)
 
 
 class Comment(models.Model):
+    '''Модель Комментария'''
     author = models.ForeignKey(User,
                                on_delete=models.CASCADE,
                                blank=False,
