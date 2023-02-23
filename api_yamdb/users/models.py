@@ -10,7 +10,8 @@ class RoleChoices(models.TextChoices):
 class User(AbstractUser):
     "Класс переопределяет и расширяет стандартную модель User."
 
-    username = models.TextField(
+    username = models.CharField(
+        max_length=150,
         blank=False,
         unique=True
     )
