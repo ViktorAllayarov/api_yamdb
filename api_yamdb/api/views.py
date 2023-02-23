@@ -12,7 +12,6 @@ from .serializers import (
     AuthSignupSerializer,
     GetJWTTokenSerializer,
     UserViewSerializer,
-    UserMeViewSerializer,
 )
 from users.models import User, RoleChoices
 
@@ -81,7 +80,7 @@ class UsersViewSet(viewsets.ModelViewSet):
         permission_classes=(permissions.IsAuthenticated,),
     )
     def me(self, request):
-        serializer = UserMeViewSerializer(
+        serializer = self.get_serializer(
             request.user, data=request.data, partial=True
         )
         serializer.is_valid(raise_exception=True)
