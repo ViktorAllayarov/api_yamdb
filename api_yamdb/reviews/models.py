@@ -14,9 +14,16 @@ class Genre(models.Model):
 
 
 class Title(models.Model):
+    def get_rating(self):
+        reviews = self.reviews.all()
+        score = 0
+        for review in reviews:
+            score += review.score
+        return (score//len(reviews))
+
     name = models.TextField()
     year = models.IntegerField()
-    rating = models.IntegerField(null=True)
+    rating = get_rating()
     description = models.TextField(blank=True, null=True)
     category = models.ForeignKey(
         Category,
@@ -32,6 +39,7 @@ class Title(models.Model):
 
 
 class Review(models.Model):
+    '''Модел Отзыва'''
     author = models.ForeignKey(User,
                                on_delete=models.CASCADE,
                                blank=False,
@@ -51,6 +59,7 @@ class Review(models.Model):
 
 
 class Comment(models.Model):
+    '''Модель Комментария'''
     author = models.ForeignKey(User,
                                on_delete=models.CASCADE,
                                blank=False,
