@@ -6,17 +6,64 @@ from rest_framework.response import Response
 from rest_framework import permissions, status, views, viewsets
 from rest_framework.pagination import LimitOffsetPagination
 from rest_framework_simplejwt.tokens import RefreshToken
-
 from .permissions import IsAnonymous
 from .serializers import (
     AuthSignupSerializer,
     GetJWTTokenSerializer,
     UserViewSerializer,
 )
-from users.models import User, RoleChoices
+from rest_framework.filters import SearchFilter
+from rest_framework.pagination import PageNumberPagination
+from rest_framework.response import Response
+from rest_framework import status, views, mixins, viewsets
+from rest_framework_simplejwt.tokens import RefreshToken
+
+from .permissions import IsAnonymous, IsAuthorReadOnly
+from .serializers import (
+    AuthSignupSerializer,
+    GetJWTTokenSerializer,
+    TitleSerializer,
+    GenreSerializer,
+    CategorySerializer,)
+from users.models import User
+from reviews.models import Category, Title, Genre
 
 EMAIL_TITLE = "Приветствуем {}"
 EMAIL_MESSAGE = "Ваш секретный код: {}"
+
+
+class MyMixinsSet(
+    viewsets.GenericViewSet,
+    mixins.ListModelMixin,
+    mixins.CreateModelMixin,
+    mixins.DestroyModelMixin
+):
+    pass
+
+
+class CategoryViewSet(MyMixinsSet):
+    queryset = Category.objects.all()
+    serializer_class = CategorySerializer
+    permission_classes = (IsAuthorReadOnly, )
+    filter_backends = (SearchFilter,)
+    search_fields = ("name",)
+    lookup_field = "slug"
+
+
+class TitleViewSet(MyMixinsSet):
+    queryset = Title.objects.all()
+    serializer_class = TitleSerializer
+    permission_classes = (IsAuthorReadOnly, )
+    pagination_class = PageNumberPagination
+
+
+class GenreViewSet(MyMixinsSet):
+    queryset = Genre.objects.all()
+    serializer_class = GenreSerializer
+    permission_classes = (IsAuthorReadOnly, )
+    filter_backends = (SearchFilter,)
+    search_fields = ("name",)
+    lookup_field = "slug"
 
 
 class AuthSignupView(views.APIView):
