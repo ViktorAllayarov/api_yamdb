@@ -1,7 +1,17 @@
 from django.conf import settings
-from django.contrib.auth.decorators import login_required
 from django.core.mail import send_mail
 from django.shortcuts import get_object_or_404
+from rest_framework.decorators import action
+from rest_framework.response import Response
+from rest_framework import permissions, status, views, viewsets
+from rest_framework.pagination import LimitOffsetPagination
+from rest_framework_simplejwt.tokens import RefreshToken
+from .permissions import IsAnonymous
+from .serializers import (
+    AuthSignupSerializer,
+    GetJWTTokenSerializer,
+    UserViewSerializer,
+)
 from rest_framework.filters import SearchFilter
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.response import Response
@@ -16,7 +26,6 @@ from .serializers import (
     GenreSerializer,
     CategorySerializer,)
 from users.models import User
-
 from reviews.models import Category, Title, Genre
 
 EMAIL_TITLE = "Приветствуем {}"
@@ -100,3 +109,33 @@ class GetJWTTokenView(views.APIView):
             {"token": str(refresh.access_token)},
             status=status.HTTP_201_CREATED,
         )
+
+
+class UsersViewSet(viewsets.ModelViewSet):
+    queryset = User.objects.all()
+    serializer_class = UserViewSerializer
+    permission_classes = (permissions.IsAdminUser,)
+    pagination_class = LimitOffsetPagination
+    lookup_field = "username"
+
+    def perform_create(self, serializer):
+        serializer.save(owner=self.request.user)
+
+    @action(
+        methods=["get", "patch"],
+        detail=False,
+        permission_classes=(permissions.IsAuthenticated,),
+    )
+    def me(self, request):
+        serializer = self.get_serializer(
+            request.user, data=request.data, partial=True
+        )
+        serializer.is_valid(raise_exception=True)
+
+        # если пользователь admin, то можно менять поле role,
+        # в остальных случаях нелья
+        if request.user.role == RoleChoices.ADMIN or request.user.is_staff:
+            serializer.save()
+        else:
+            serializer.save(role=self.request.user.role)
+        return Response(serializer.data, status=status.HTTP_200_OK)
