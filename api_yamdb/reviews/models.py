@@ -1,9 +1,7 @@
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 
-
-class User(AbstractUser):
-    pass
+from users.models import User
 
 
 class Category(models.Model):
@@ -48,7 +46,7 @@ class Review(models.Model):
                               related_name='reviews'
                               )
     text = models.TextField()
-    score = models.IntegerField(related_name='reviews')
+    score = models.IntegerField()
     pub_date = models.DateTimeField(
         'Дата добавления', auto_now_add=True, db_index=True)
 

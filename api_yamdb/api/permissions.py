@@ -1,6 +1,6 @@
 from rest_framework import permissions
 
-from users.models import User
+from users.models import RoleChoices
 
 
 class IsAnonymous(permissions.BasePermission):
@@ -21,7 +21,7 @@ class IsAdminOrReadOnly(permissions.BasePermission):
     def has_permission(self, request, view):
         return (
             request.method in permissions.SAFE_METHODS
-            or request.user.role == User.Role.ADMIN
+            or request.user.role == RoleChoices.ADMIN
             or request.user.is_staff
         )
 
@@ -36,7 +36,29 @@ class AuthorPlusOrReadOnly(permissions.BasePermission):
     def has_object_permission(self, request, view, obj):
         return (
             obj.author == request.user
-            or request.user.role == User.Role.MODERATOR
-            or request.user.role == User.Role.ADMIN
+            or request.user.role == RoleChoices.MODERATOR
+            or request.user.role == RoleChoices.ADMIN
             or request.user.is_staff
         )
+
+
+class IsOwnerOrReadOnly(permissions.BasePermission):
+    def has_permission(self, request, view):
+        return (
+            request.method in permissions.SAFE_METHODS
+            or request.user.is_authenticated
+        )
+
+    def has_object_permission(self, request, view, obj):
+        return (
+            request.method in permissions.SAFE_METHODS
+            or obj.author == request.user
+        )
+
+
+class IsOwner(permissions.BasePermission):
+    def has_permission(self, request, view):
+        return request.user.is_authenticated
+
+    def has_object_permission(self, request, view, obj):
+        return obj.author == request.user
