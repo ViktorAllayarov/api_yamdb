@@ -4,28 +4,21 @@ from django.shortcuts import get_object_or_404
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework import permissions, status, views, viewsets
-from rest_framework.pagination import LimitOffsetPagination
+from rest_framework.pagination import LimitOffsetPagination, PageNumberPagination
 from rest_framework_simplejwt.tokens import RefreshToken
-from .permissions import IsAnonymous
-from .serializers import (
-    AuthSignupSerializer,
-    GetJWTTokenSerializer,
-    UserViewSerializer,
-)
 from rest_framework.filters import SearchFilter
-from rest_framework.pagination import PageNumberPagination
-from rest_framework.response import Response
 from rest_framework import status, views, mixins, viewsets
 from rest_framework_simplejwt.tokens import RefreshToken
 
-from .permissions import IsAnonymous, IsAuthorReadOnly
+from .permissions import IsAnonymous, IsAuthorReadOnly, IsAdmin
 from .serializers import (
     AuthSignupSerializer,
     GetJWTTokenSerializer,
     TitleSerializer,
     GenreSerializer,
+    UserViewSerializer,
     CategorySerializer,)
-from users.models import User
+from users.models import RoleChoices, User
 from reviews.models import Category, Title, Genre
 
 EMAIL_TITLE = "Приветствуем {}"
@@ -69,11 +62,15 @@ class GenreViewSet(MyMixinsSet):
 class AuthSignupView(views.APIView):
     """Класс для регистрации новых пользователей."""
 
-    permission_classes = (IsAnonymous,)
+    # permission_classes = (IsAnonymous,)
 
     def post(self, request):
+        username_and_email_exists = User.objects.filter(username= request.data.get("username"), email=request.data.get("email")).exists()
+        if username_and_email_exists:
+            return Response(request.data, status=status.HTTP_200_OK)
         serializer = AuthSignupSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
+        
         user = User.objects.create_user(
             serializer.data.get("username"),
             email=serializer.data.get("email"),
@@ -86,7 +83,7 @@ class AuthSignupView(views.APIView):
             fail_silently=False,
         )
 
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 class GetJWTTokenView(views.APIView):
@@ -114,12 +111,9 @@ class GetJWTTokenView(views.APIView):
 class UsersViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all()
     serializer_class = UserViewSerializer
-    permission_classes = (permissions.IsAdminUser,)
+    permission_classes = (IsAdmin,)
     pagination_class = LimitOffsetPagination
     lookup_field = "username"
-
-    def perform_create(self, serializer):
-        serializer.save(owner=self.request.user)
 
     @action(
         methods=["get", "patch"],
