@@ -1,4 +1,5 @@
 from rest_framework import serializers
+from rest_framework.exceptions import NotFound
 
 from users.models import User
 from reviews.models import Category, Title, Genre
@@ -30,6 +31,12 @@ class AuthSignupSerializer(serializers.ModelSerializer):
         )
         model = User
 
+    def validate(self, data):
+        if data.get("username") == "me":
+            raise serializers.ValidationError("Ошибка: недопустимое имя")
+        return data
+
+
 
 class GetJWTTokenSerializer(serializers.Serializer):
     username = serializers.CharField(required=True)
@@ -37,7 +44,9 @@ class GetJWTTokenSerializer(serializers.Serializer):
 
     def validate(self, data):
         if not User.objects.filter(username=data.get("username")).exists():
-            raise serializers.ValidationError("Ошибка: не верный username")
+            raise NotFound("Ошибка: не верный username")
+        if not User.objects.filter(username=data.get("username")).exists():
+            raise NotFound("Ошибка: не верный username")
         if not User.objects.filter(
             password=data.get("confirmation_code")
         ).exists():
