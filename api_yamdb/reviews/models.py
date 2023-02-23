@@ -3,6 +3,16 @@ from django.db import models
 from users.models import User
 
 
+def get_rating(x):
+    reviews = x.reviews.all()
+    score = 0
+    if reviews:
+        for review in reviews:
+            score += review.score
+        return (score//len(reviews))
+    return 0
+
+
 class Category(models.Model):
     name = models.CharField(max_length=256)
     slug = models.SlugField(unique=True)
@@ -14,16 +24,11 @@ class Genre(models.Model):
 
 
 class Title(models.Model):
-    def get_rating(self):
-        reviews = self.reviews.all()
-        score = 0
-        for review in reviews:
-            score += review.score
-        return (score//len(reviews))
+    def __init__(self):
+        self.rating = get_rating(self)
 
     name = models.TextField()
     year = models.IntegerField()
-    rating = get_rating()
     description = models.TextField(blank=True, null=True)
     category = models.ForeignKey(
         Category,
