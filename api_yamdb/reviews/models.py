@@ -45,18 +45,20 @@ class Title(models.Model):
 
 class Review(models.Model):
     '''Модел Отзыва'''
-    author = models.ForeignKey(User,
-                               on_delete=models.CASCADE,
-                               blank=False,
-                               null=False,
-                               related_name='reviews'
-                               )
-    title = models.ForeignKey(Title,
-                              on_delete=models.CASCADE,
-                              blank=False,
-                              null=False,
-                              related_name='reviews'
-                              )
+    author = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        blank=False,
+        null=False,
+        related_name='reviews'
+    )
+    title = models.ForeignKey(
+        Title,
+        on_delete=models.CASCADE,
+        blank=False,
+        null=False,
+        related_name='reviews'
+    )
     text = models.TextField()
     score = models.IntegerField()
     pub_date = models.DateTimeField(
@@ -65,20 +67,22 @@ class Review(models.Model):
 
 class Comment(models.Model):
     '''Модель Комментария'''
-    author = models.ForeignKey(User,
-                               on_delete=models.CASCADE,
-                               blank=False,
-                               null=False,
-                               related_name='comments'
-                               )
-    review = models.ForeignKey(Review,
-                               on_delete=models.CASCADE,
-                               blank=False,
-                               null=False,
-                               related_name='comments'
-                               )
-    text = models.TextField(blank=False,
-                            null=False,)
+    author = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        blank=False,
+        null=False,
+        related_name='comments'
+    )
+    review = models.ForeignKey(
+        Review,
+        on_delete=models.CASCADE,
+        blank=False,
+        null=False,
+        related_name='comments'
+    )
+    text = models.TextField(
+        blank=False, null=False,)
     pub_date = models.DateTimeField(
         'Дата добавления', auto_now_add=True, db_index=True)
 
