@@ -3,8 +3,11 @@ from django.core.mail import send_mail
 from django.shortcuts import get_object_or_404
 from rest_framework.decorators import action
 from rest_framework.response import Response
-from rest_framework import permissions, status, views, viewsets
-from rest_framework.pagination import LimitOffsetPagination, PageNumberPagination
+from rest_framework import filters, permissions, status, views, viewsets
+from rest_framework.pagination import (
+    LimitOffsetPagination,
+    PageNumberPagination,
+)
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.filters import SearchFilter
 from rest_framework import status, views, mixins, viewsets
@@ -17,7 +20,8 @@ from .serializers import (
     TitleSerializer,
     GenreSerializer,
     UserViewSerializer,
-    CategorySerializer,)
+    CategorySerializer,
+)
 from users.models import RoleChoices, User
 from reviews.models import Category, Title, Genre
 
@@ -29,7 +33,7 @@ class MyMixinsSet(
     viewsets.GenericViewSet,
     mixins.ListModelMixin,
     mixins.CreateModelMixin,
-    mixins.DestroyModelMixin
+    mixins.DestroyModelMixin,
 ):
     pass
 
@@ -37,7 +41,7 @@ class MyMixinsSet(
 class CategoryViewSet(MyMixinsSet):
     queryset = Category.objects.all()
     serializer_class = CategorySerializer
-    permission_classes = (IsAuthorReadOnly, )
+    permission_classes = (IsAuthorReadOnly,)
     filter_backends = (SearchFilter,)
     search_fields = ("name",)
     lookup_field = "slug"
@@ -46,14 +50,14 @@ class CategoryViewSet(MyMixinsSet):
 class TitleViewSet(MyMixinsSet):
     queryset = Title.objects.all()
     serializer_class = TitleSerializer
-    permission_classes = (IsAuthorReadOnly, )
+    permission_classes = (IsAuthorReadOnly,)
     pagination_class = PageNumberPagination
 
 
 class GenreViewSet(MyMixinsSet):
     queryset = Genre.objects.all()
     serializer_class = GenreSerializer
-    permission_classes = (IsAuthorReadOnly, )
+    permission_classes = (IsAuthorReadOnly,)
     filter_backends = (SearchFilter,)
     search_fields = ("name",)
     lookup_field = "slug"
@@ -65,12 +69,15 @@ class AuthSignupView(views.APIView):
     # permission_classes = (IsAnonymous,)
 
     def post(self, request):
-        username_and_email_exists = User.objects.filter(username= request.data.get("username"), email=request.data.get("email")).exists()
+        username_and_email_exists = User.objects.filter(
+            username=request.data.get("username"),
+            email=request.data.get("email"),
+        ).exists()
         if username_and_email_exists:
             return Response(request.data, status=status.HTTP_200_OK)
         serializer = AuthSignupSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        
+
         user = User.objects.create_user(
             serializer.data.get("username"),
             email=serializer.data.get("email"),
@@ -113,7 +120,27 @@ class UsersViewSet(viewsets.ModelViewSet):
     serializer_class = UserViewSerializer
     permission_classes = (IsAdmin,)
     pagination_class = LimitOffsetPagination
+    filter_backends = (filters.SearchFilter,)
+    search_fields = ("username",)
     lookup_field = "username"
+
+    def update(self, request, *args, **kwargs):
+        if request.method in ("PUT"):
+            return Response(
+                request.data, status=status.HTTP_405_METHOD_NOT_ALLOWED
+            )
+        partial = kwargs.pop("partial", False)
+        instance = self.get_object()
+        serializer = self.get_serializer(
+            instance, data=request.data, partial=partial
+        )
+        serializer.is_valid(raise_exception=True)
+        self.perform_update(serializer)
+
+        if getattr(instance, "_prefetched_objects_cache", None):
+            instance._prefetched_objects_cache = {}
+
+        return Response(serializer.data)
 
     @action(
         methods=["get", "patch"],
