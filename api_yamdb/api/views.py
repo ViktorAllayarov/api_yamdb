@@ -21,9 +21,11 @@ from .serializers import (
     GenreSerializer,
     UserViewSerializer,
     CategorySerializer,
+    ReviewSerializer,
+    CommentSerializer
 )
 from users.models import RoleChoices, User
-from reviews.models import Category, Title, Genre
+from reviews.models import Category, Title, Genre, Review, Comment
 
 EMAIL_TITLE = "Приветствуем {}"
 EMAIL_MESSAGE = "Ваш секретный код: {}"
@@ -160,3 +162,26 @@ class UsersViewSet(viewsets.ModelViewSet):
         else:
             serializer.save(role=self.request.user.role)
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class ReviewViewSet(viewsets.ModelViewSet):
+    queryset = Review.objects.all()
+    serializer_class = ReviewSerializer
+    ermission_classes = (IsAdminOrReadOnly,)
+    pagination_class = LimitOffsetPagination
+    filter_backends = (filters.SearchFilter,)
+    search_fields = ("review",)
+    lookup_field = "review"
+
+    def get_queryset(self):
+        return super().get_queryset()
+
+
+class CommentViewSet(viewsets.ModelViewSet):
+    queryset = Comment.objects.all()
+    serializer_class = CommentSerializer
+    ermission_classes = (IsAdminOrReadOnly,)
+    pagination_class = LimitOffsetPagination
+    filter_backends = (filters.SearchFilter,)
+    search_fields = ("comment",)
+    lookup_field = "comment"

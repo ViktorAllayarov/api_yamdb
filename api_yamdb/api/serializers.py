@@ -2,7 +2,7 @@ from rest_framework import serializers
 from rest_framework.exceptions import NotFound
 
 from users.models import User
-from reviews.models import Category, Title, Genre
+from reviews.models import Category, Title, Genre, Review, Comment
 
 
 class TitleSerializer(serializers.ModelSerializer):
@@ -37,7 +37,6 @@ class AuthSignupSerializer(serializers.ModelSerializer):
         return data
 
 
-
 class GetJWTTokenSerializer(serializers.Serializer):
     username = serializers.CharField(required=True)
     confirmation_code = serializers.CharField(required=True)
@@ -67,3 +66,15 @@ class UserViewSerializer(serializers.ModelSerializer):
             "bio",
             "role",
         )
+
+
+class ReviewSerializer(serializers.Serializer):
+    class Meta:
+        model = Review
+        fields = "__all__"
+
+
+class CommentSerializer(serializers.Serializer):
+    class Meta:
+        model = Comment
+        fields = "__all__"
