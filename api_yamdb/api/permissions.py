@@ -9,7 +9,11 @@ class IsAnonymous(permissions.BasePermission):
     message = "Ошибка: Пользователь не должен быть авторизован."
 
     def has_permission(self, request, view):
-        return request.user.is_anonymous or request.user.role == RoleChoices.ADMIN or request.user.is_staff
+        return (
+            request.user.is_anonymous
+            or request.user.role == RoleChoices.ADMIN
+            or request.user.is_staff
+        )
 
 
 class IsAdminOrReadOnly(permissions.BasePermission):
@@ -78,4 +82,6 @@ class IsAdmin(permissions.BasePermission):
     message = "Ошибка: Пользователь должен быть администратором."
 
     def has_permission(self, request, view):
-        return request.user.role == RoleChoices.ADMIN or request.user.is_staff
+        return request.user.is_authenticated and (
+            request.user.role == RoleChoices.ADMIN or request.user.is_staff
+        )
