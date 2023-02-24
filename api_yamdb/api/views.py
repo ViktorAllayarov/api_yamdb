@@ -51,8 +51,8 @@ class CategoryViewSet(MyMixinsSet):
 class TitleViewSet(MyMixinsSet):
     queryset = Title.objects.all()
     serializer_class = TitleSerializer
-    permission_classes = (IsAuthorReadOnly,)
-    pagination_class = PageNumberPagination
+    permission_classes = (IsAdminOrReadOnly,)
+    pagination_class = LimitOffsetPagination
 
 
 class GenreViewSet(MyMixinsSet):

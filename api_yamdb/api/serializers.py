@@ -1,3 +1,4 @@
+from django.shortcuts import get_object_or_404
 from rest_framework import serializers
 from rest_framework.exceptions import NotFound
 
@@ -5,10 +6,10 @@ from users.models import User
 from reviews.models import Category, Title, Genre
 
 
-class TitleSerializer(serializers.ModelSerializer):
+class CategorySerializer(serializers.ModelSerializer):
     class Meta:
-        model = Title
-        fields = "__all__"
+        model = Category
+        fields = ("name", "slug")
 
 
 class GenreSerializer(serializers.ModelSerializer):
@@ -17,10 +18,30 @@ class GenreSerializer(serializers.ModelSerializer):
         fields = ("name", "slug")
 
 
-class CategorySerializer(serializers.ModelSerializer):
+class TitleSerializer(serializers.ModelSerializer):
+    category = CategorySerializer(read_only=True)
+    genre = GenreSerializer(read_only=True, many=True)
+
     class Meta:
-        model = Category
-        fields = ("name", "slug")
+        model = Title
+        fields = "__all__"
+
+    def create(self, validated_data):
+        category_slug = validated_data.pop('category')
+        category = get_object_or_404(Category, slug=category_slug)
+        genre_slug = validated_data.pop('genre')
+        category = get_object_or_404(Genre, slug=genre_slug)
+
+        # Для каждого достижения из списка достижений
+        for achievement in achievements:
+            # Создадим новую запись или получим существующий экземпляр из БД
+            current_achievement, status = Achievement.objects.get_or_create(
+                **achievement)
+            # Поместим ссылку на каждое достижение во вспомогательную таблицу
+            # Не забыв указать к какому котику оно относится
+            AchievementCat.objects.create(
+                achievement=current_achievement, cat=cat)
+        return cat 
 
 
 class AuthSignupSerializer(serializers.ModelSerializer):
