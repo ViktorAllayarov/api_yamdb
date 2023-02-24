@@ -13,7 +13,7 @@ from rest_framework.filters import SearchFilter
 from rest_framework import status, views, mixins, viewsets
 from rest_framework_simplejwt.tokens import RefreshToken
 
-from .permissions import IsAnonymous, IsAuthorReadOnly, IsAdmin
+from .permissions import IsAnonymous, IsAuthorReadOnly, IsAdmin, IsAdminOrReadOnly
 from .serializers import (
     AuthSignupSerializer,
     GetJWTTokenSerializer,
@@ -41,7 +41,8 @@ class MyMixinsSet(
 class CategoryViewSet(MyMixinsSet):
     queryset = Category.objects.all()
     serializer_class = CategorySerializer
-    permission_classes = (IsAuthorReadOnly,)
+    pagination_class = LimitOffsetPagination
+    permission_classes = (IsAdminOrReadOnly,)
     filter_backends = (SearchFilter,)
     search_fields = ("name",)
     lookup_field = "slug"
@@ -57,7 +58,8 @@ class TitleViewSet(MyMixinsSet):
 class GenreViewSet(MyMixinsSet):
     queryset = Genre.objects.all()
     serializer_class = GenreSerializer
-    permission_classes = (IsAuthorReadOnly,)
+    pagination_class = LimitOffsetPagination
+    permission_classes = (IsAdminOrReadOnly,)
     filter_backends = (SearchFilter,)
     search_fields = ("name",)
     lookup_field = "slug"
@@ -65,8 +67,6 @@ class GenreViewSet(MyMixinsSet):
 
 class AuthSignupView(views.APIView):
     """Класс для регистрации новых пользователей."""
-
-    # permission_classes = (IsAnonymous,)
 
     def post(self, request):
         username_and_email_exists = User.objects.filter(
