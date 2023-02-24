@@ -13,7 +13,7 @@ from rest_framework.filters import SearchFilter
 from rest_framework import status, views, mixins, viewsets
 from rest_framework_simplejwt.tokens import RefreshToken
 
-from .permissions import IsAnonymous, IsAuthorReadOnly, IsAdmin, IsAdminOrReadOnly
+from .permissions import IsAnonymous, IsAuthorReadOnly, IsAdmin, IsAdminOrReadOnly, AuthorPlusOrReadOnly
 from .serializers import (
     AuthSignupSerializer,
     GetJWTTokenSerializer,
@@ -167,21 +167,36 @@ class UsersViewSet(viewsets.ModelViewSet):
 class ReviewViewSet(viewsets.ModelViewSet):
     queryset = Review.objects.all()
     serializer_class = ReviewSerializer
-    ermission_classes = (IsAdminOrReadOnly,)
+    ermission_classes = (AuthorPlusOrReadOnly,)
     pagination_class = LimitOffsetPagination
     filter_backends = (filters.SearchFilter,)
     search_fields = ("review",)
     lookup_field = "review"
 
+    def get_title(self):
+        return get_object_or_404(Title, id=self.kwargs.get('title_id'))
+
+    def perform_create(self, serializer):
+        serializer.save(author=self.request.user, title=self.get_title())
+
     def get_queryset(self):
-        return super().get_queryset()
+        return self.get_title().comments.all()
 
 
 class CommentViewSet(viewsets.ModelViewSet):
     queryset = Comment.objects.all()
     serializer_class = CommentSerializer
-    ermission_classes = (IsAdminOrReadOnly,)
+    ermission_classes = (AuthorPlusOrReadOnly,)
     pagination_class = LimitOffsetPagination
     filter_backends = (filters.SearchFilter,)
     search_fields = ("comment",)
     lookup_field = "comment"
+
+    def get_review(self):
+        return get_object_or_404(Review, id=self.kwargs.get('review_id'))
+
+    def perform_create(self, serializer):
+        serializer.save(author=self.request.user, review=self.get_review())
+
+    def get_queryset(self):
+        return self.get_review().comments.all()

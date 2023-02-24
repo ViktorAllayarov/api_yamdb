@@ -26,6 +26,7 @@ class Genre(models.Model):
 class Title(models.Model):
     def __init__(self):
         self.rating = get_rating(self)
+        print(self.rating)
 
     name = models.TextField()
     year = models.IntegerField()
