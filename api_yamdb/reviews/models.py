@@ -1,3 +1,4 @@
+from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 
 from users.models import User
@@ -17,21 +18,18 @@ class Category(models.Model):
     """Класс модель для категорий."""
 
     name = models.CharField(max_length=256)
-    slug = models.SlugField(unique=True)
+    slug = models.SlugField(max_length=50, unique=True)
 
 
 class Genre(models.Model):
     """Класс модель для жанров."""
 
     name = models.CharField(max_length=256)
-    slug = models.SlugField(unique=True)
+    slug = models.SlugField(max_length=50, unique=True)
 
 
 class Title(models.Model):
     """Класс модель для произведений."""
-
-    def __init__(self):
-        self.rating = get_rating(self)
 
     name = models.CharField(max_length=256)
     year = models.IntegerField()
@@ -44,9 +42,22 @@ class Title(models.Model):
     )
     genre = models.ManyToManyField(
         Genre,
+        through='GenreTitle',
         blank=True,
         null=True,
     )
+    rating = models.IntegerField(
+        validators=[
+            MaxValueValidator(10),
+            MinValueValidator(1),
+        ],
+        null=True,
+    )
+
+
+class GenreTitle(models.Model):
+    genre = models.ForeignKey(Genre, on_delete=models.CASCADE)
+    title = models.ForeignKey(Title, on_delete=models.CASCADE)
 
 
 class Review(models.Model):

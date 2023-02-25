@@ -1,9 +1,8 @@
-from django.shortcuts import get_object_or_404
 from rest_framework import serializers
 from rest_framework.exceptions import NotFound
 
+from reviews.models import Category, Title, Genre, GenreTitle, Review
 from users.models import User
-from reviews.models import Category, Title, Genre
 
 
 class CategorySerializer(serializers.ModelSerializer):
@@ -18,30 +17,45 @@ class GenreSerializer(serializers.ModelSerializer):
         fields = ("name", "slug")
 
 
-class TitleSerializer(serializers.ModelSerializer):
-    category = CategorySerializer(read_only=True)
-    genre = GenreSerializer(read_only=True, many=True)
+class TitleListSerializer(serializers.ModelSerializer):
+    genre = GenreSerializer(many=True)
+    category = CategorySerializer()
+    rating = serializers.SerializerMethodField()
+
 
     class Meta:
+        fields = '__all__'
         model = Title
-        fields = "__all__"
+
+    def get_rating(self, obj):
+        reviews = Review.objects.filter(title_id=obj.id)
+        score = 0
+        if reviews:
+            for review in reviews:
+                score += review.score
+            return score // len(reviews)
+        return None
+
+
+class TitleSerializer(serializers.ModelSerializer):
+    name = serializers.CharField(max_length=256, required=True)
+    year = serializers.IntegerField(required=True)
+    genre = serializers.SlugRelatedField(required=True, slug_field="slug", queryset=Genre.objects.all(), many=True)
+    category = serializers.SlugRelatedField(required=True, slug_field="slug", queryset=Category.objects.all())
+    rating = serializers.IntegerField(required=False, default=0)
+    
+    class Meta:
+        model = Title
+        fields = ('__all__')
 
     def create(self, validated_data):
-        category_slug = validated_data.pop('category')
-        category = get_object_or_404(Category, slug=category_slug)
-        genre_slug = validated_data.pop('genre')
-        category = get_object_or_404(Genre, slug=genre_slug)
+        genres = validated_data.pop('genre')
+        title = Title.objects.create(**validated_data)
+        for genre in genres:
+            GenreTitle.objects.create(
+                genre=genre, title=title)
 
-        # Для каждого достижения из списка достижений
-        for achievement in achievements:
-            # Создадим новую запись или получим существующий экземпляр из БД
-            current_achievement, status = Achievement.objects.get_or_create(
-                **achievement)
-            # Поместим ссылку на каждое достижение во вспомогательную таблицу
-            # Не забыв указать к какому котику оно относится
-            AchievementCat.objects.create(
-                achievement=current_achievement, cat=cat)
-        return cat 
+        return title
 
 
 class AuthSignupSerializer(serializers.ModelSerializer):

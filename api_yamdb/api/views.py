@@ -8,16 +8,18 @@ from rest_framework.pagination import (
     LimitOffsetPagination,
     PageNumberPagination,
 )
+from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework_simplejwt.tokens import RefreshToken
-from rest_framework.filters import SearchFilter
 from rest_framework import status, views, mixins, viewsets
 from rest_framework_simplejwt.tokens import RefreshToken
 
+from .filters import TitleFilter
 from .permissions import IsAnonymous, IsAuthorReadOnly, IsAdmin, IsAdminOrReadOnly
 from .serializers import (
     AuthSignupSerializer,
     GetJWTTokenSerializer,
     TitleSerializer,
+    TitleListSerializer,
     GenreSerializer,
     UserViewSerializer,
     CategorySerializer,
@@ -43,16 +45,23 @@ class CategoryViewSet(MyMixinsSet):
     serializer_class = CategorySerializer
     pagination_class = LimitOffsetPagination
     permission_classes = (IsAdminOrReadOnly,)
-    filter_backends = (SearchFilter,)
+    filter_backends = (filters.SearchFilter,)
     search_fields = ("name",)
     lookup_field = "slug"
 
 
-class TitleViewSet(MyMixinsSet):
+class TitleViewSet(viewsets.ModelViewSet):
     queryset = Title.objects.all()
     serializer_class = TitleSerializer
     permission_classes = (IsAdminOrReadOnly,)
     pagination_class = LimitOffsetPagination
+    filter_backends = (DjangoFilterBackend,)
+    filterset_class = TitleFilter
+
+    def get_serializer_class(self):
+        if self.action == "list" or self.action == "retrieve":
+            return TitleListSerializer
+        return TitleSerializer
 
 
 class GenreViewSet(MyMixinsSet):
@@ -60,7 +69,7 @@ class GenreViewSet(MyMixinsSet):
     serializer_class = GenreSerializer
     pagination_class = LimitOffsetPagination
     permission_classes = (IsAdminOrReadOnly,)
-    filter_backends = (SearchFilter,)
+    filter_backends = (filters.SearchFilter,)
     search_fields = ("name",)
     lookup_field = "slug"
 
