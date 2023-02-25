@@ -4,10 +4,7 @@ from django.shortcuts import get_object_or_404
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework import filters, permissions, status, views, viewsets
-from rest_framework.pagination import (
-    LimitOffsetPagination,
-    PageNumberPagination,
-)
+from rest_framework.pagination import LimitOffsetPagination
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework import status, views, mixins, viewsets
@@ -32,7 +29,7 @@ from .serializers import (
     CommentSerializer,
 )
 from users.models import RoleChoices, User
-from reviews.models import Category, Title, Genre, Review, Comment
+from reviews.models import Category, Title, Genre, Review
 
 EMAIL_TITLE = "Приветствуем {}"
 EMAIL_MESSAGE = "Ваш секретный код: {}"
@@ -104,14 +101,15 @@ class ReviewViewSet(viewsets.ModelViewSet):
 
 class CommentViewSet(viewsets.ModelViewSet):
     serializer_class = CommentSerializer
-    ermission_classes = (AuthorPlusOrReadOnly,)
+    permission_classes = (AuthorPlusOrReadOnly,)
     pagination_class = LimitOffsetPagination
-    filter_backends = (filters.SearchFilter,)
-    search_fields = ("comment",)
-    lookup_field = "comment"
 
     def get_review(self):
-        return get_object_or_404(Review, id=self.kwargs.get("review_id"))
+        return get_object_or_404(
+            Review,
+            id=self.kwargs.get("review_id"),
+            title_id=self.kwargs.get("title_id"),
+        )
 
     def perform_create(self, serializer):
         serializer.save(author=self.request.user, review=self.get_review())
