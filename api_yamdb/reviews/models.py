@@ -4,16 +4,6 @@ from django.db import models
 from users.models import User
 
 
-def get_rating(x):
-    reviews = x.reviews.all()
-    score = 0
-    if reviews:
-        for review in reviews:
-            score += review.score
-        return score // len(reviews)
-    return 0
-
-
 class Category(models.Model):
     """Класс модель для категорий."""
 
@@ -42,7 +32,7 @@ class Title(models.Model):
     )
     genre = models.ManyToManyField(
         Genre,
-        through='GenreTitle',
+        through="GenreTitle",
         blank=True,
         null=True,
     )
@@ -78,10 +68,22 @@ class Review(models.Model):
         related_name="reviews",
     )
     text = models.TextField()
-    score = models.IntegerField()
+    score = models.IntegerField(
+        validators=[
+            MaxValueValidator(10),
+            MinValueValidator(1),
+        ],
+    )
     pub_date = models.DateTimeField(
         "Дата добавления", auto_now_add=True, db_index=True
     )
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["author", "title"], name="unique_author"
+            )
+        ]
 
 
 class Comment(models.Model):
@@ -110,7 +112,8 @@ class Comment(models.Model):
     )
 
     class Meta:
-        unique_together = (
-            "author",
-            "review",
-        )
+        constraints = [
+            models.UniqueConstraint(
+                fields=["author", "review"], name="unique_review"
+            )
+        ]

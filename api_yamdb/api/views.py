@@ -14,7 +14,12 @@ from rest_framework import status, views, mixins, viewsets
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from .filters import TitleFilter
-from .permissions import IsAnonymous, IsAuthorReadOnly, IsAdmin, IsAdminOrReadOnly
+from .permissions import (
+    IsAnonymous,
+    AuthorPlusOrReadOnly,
+    IsAdmin,
+    IsAdminOrReadOnly,
+)
 from .serializers import (
     AuthSignupSerializer,
     GetJWTTokenSerializer,
@@ -23,9 +28,11 @@ from .serializers import (
     GenreSerializer,
     UserViewSerializer,
     CategorySerializer,
+    ReviewSerializer,
+    CommentSerializer,
 )
 from users.models import RoleChoices, User
-from reviews.models import Category, Title, Genre
+from reviews.models import Category, Title, Genre, Review, Comment
 
 EMAIL_TITLE = "Приветствуем {}"
 EMAIL_MESSAGE = "Ваш секретный код: {}"
@@ -72,6 +79,45 @@ class GenreViewSet(MyMixinsSet):
     filter_backends = (filters.SearchFilter,)
     search_fields = ("name",)
     lookup_field = "slug"
+
+
+class ReviewViewSet(viewsets.ModelViewSet):
+    serializer_class = ReviewSerializer
+    permission_classes = (AuthorPlusOrReadOnly,)
+    pagination_class = LimitOffsetPagination
+
+    def get_title(self):
+        return get_object_or_404(Title, id=self.kwargs.get("title_id"))
+
+    def get_queryset(self):
+        return self.get_title().reviews.all()
+
+    def perform_create(self, serializer):
+        serializer.save(author=self.request.user, title=self.get_title())
+
+    def get_serializer_context(self):
+        return {
+            "title_id": self.kwargs.get("title_id"),
+            "request": self.request,
+        }
+
+
+class CommentViewSet(viewsets.ModelViewSet):
+    serializer_class = CommentSerializer
+    ermission_classes = (AuthorPlusOrReadOnly,)
+    pagination_class = LimitOffsetPagination
+    filter_backends = (filters.SearchFilter,)
+    search_fields = ("comment",)
+    lookup_field = "comment"
+
+    def get_review(self):
+        return get_object_or_404(Review, id=self.kwargs.get("review_id"))
+
+    def perform_create(self, serializer):
+        serializer.save(author=self.request.user, review=self.get_review())
+
+    def get_queryset(self):
+        return self.get_review().comments.all()
 
 
 class AuthSignupView(views.APIView):
