@@ -4,13 +4,18 @@ from django.db import models
 
 
 class RoleChoices(models.TextChoices):
-    USER = 'user'
-    MODERATOR = 'moderator'
-    ADMIN = 'admin'
+    USER = "user"
+    MODERATOR = "moderator"
+    ADMIN = "admin"
 
 
 class User(AbstractUser):
     "Класс переопределяет и расширяет стандартную модель User."
+
+    USERNAME_ERR_MESS = (
+        "Содержание поля 'username' не соответствует",
+        "паттерну '^[\\w.@+-]+\\z'",
+    )
 
     username = models.CharField(
         max_length=150,
@@ -18,10 +23,10 @@ class User(AbstractUser):
         unique=True,
         validators=[
             RegexValidator(
-            regex=r"^[\w.@+-]+",
-            message="Содержание поля 'username' не соответствует паттерну '^[\\w.@+-]+\\z'",
+                regex=r"^[\w.@+-]+",
+                message=USERNAME_ERR_MESS,
             )
-        ]
+        ],
     )
     email = models.EmailField(
         blank=False,
