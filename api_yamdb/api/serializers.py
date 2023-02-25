@@ -81,9 +81,7 @@ class ReviewSerializer(serializers.ModelSerializer):
             ).exists()
             and self.context.get("request").method != "PATCH"
         ):
-            raise serializers.ValidationError(
-                "От одного пользователя допускается только один отзыв для произведения"
-            )
+            raise serializers.ValidationError("Превышен лимит отзывов")
         return data
 
 
