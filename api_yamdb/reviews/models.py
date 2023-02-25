@@ -1,3 +1,4 @@
+from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 
 from users.models import User
@@ -9,25 +10,28 @@ def get_rating(x):
     if reviews:
         for review in reviews:
             score += review.score
-        return (score//len(reviews))
+        return score // len(reviews)
     return 0
 
 
 class Category(models.Model):
+    """Класс модель для категорий."""
+
     name = models.CharField(max_length=256)
-    slug = models.SlugField(unique=True)
+    slug = models.SlugField(max_length=50, unique=True)
 
 
 class Genre(models.Model):
+    """Класс модель для жанров."""
+
     name = models.CharField(max_length=256)
-    slug = models.SlugField(unique=True)
+    slug = models.SlugField(max_length=50, unique=True)
 
 
 class Title(models.Model):
-    def __init__(self):
-        self.rating = get_rating(self)
+    """Класс модель для произведений."""
 
-    name = models.TextField()
+    name = models.CharField(max_length=256)
     year = models.IntegerField()
     description = models.TextField(blank=True, null=True)
     category = models.ForeignKey(
@@ -38,49 +42,75 @@ class Title(models.Model):
     )
     genre = models.ManyToManyField(
         Genre,
+        through='GenreTitle',
         blank=True,
+        null=True,
+    )
+    rating = models.IntegerField(
+        validators=[
+            MaxValueValidator(10),
+            MinValueValidator(1),
+        ],
         null=True,
     )
 
 
+class GenreTitle(models.Model):
+    genre = models.ForeignKey(Genre, on_delete=models.CASCADE)
+    title = models.ForeignKey(Title, on_delete=models.CASCADE)
+
+
 class Review(models.Model):
-    '''Модел Отзыва'''
-    author = models.ForeignKey(User,
-                               on_delete=models.CASCADE,
-                               blank=False,
-                               null=False,
-                               related_name='reviews'
-                               )
-    title = models.ForeignKey(Title,
-                              on_delete=models.CASCADE,
-                              blank=False,
-                              null=False,
-                              related_name='reviews'
-                              )
+    """Класс модель для отзывов."""
+
+    author = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        blank=False,
+        null=False,
+        related_name="reviews",
+    )
+    title = models.ForeignKey(
+        Title,
+        on_delete=models.CASCADE,
+        blank=False,
+        null=False,
+        related_name="reviews",
+    )
     text = models.TextField()
     score = models.IntegerField()
     pub_date = models.DateTimeField(
-        'Дата добавления', auto_now_add=True, db_index=True)
+        "Дата добавления", auto_now_add=True, db_index=True
+    )
 
 
 class Comment(models.Model):
-    '''Модель Комментария'''
-    author = models.ForeignKey(User,
-                               on_delete=models.CASCADE,
-                               blank=False,
-                               null=False,
-                               related_name='comments'
-                               )
-    review = models.ForeignKey(Review,
-                               on_delete=models.CASCADE,
-                               blank=False,
-                               null=False,
-                               related_name='comments'
-                               )
-    text = models.TextField(blank=False,
-                            null=False,)
+    """Модель Комментария"""
+
+    author = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        blank=False,
+        null=False,
+        related_name="comments",
+    )
+    review = models.ForeignKey(
+        Review,
+        on_delete=models.CASCADE,
+        blank=False,
+        null=False,
+        related_name="comments",
+    )
+    text = models.TextField(
+        blank=False,
+        null=False,
+    )
     pub_date = models.DateTimeField(
-        'Дата добавления', auto_now_add=True, db_index=True)
+        "Дата добавления", auto_now_add=True, db_index=True
+    )
 
     class Meta:
-        unique_together = ('author', 'review',)
+        unique_together = (
+            "author",
+            "review",
+        )
