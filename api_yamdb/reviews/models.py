@@ -36,13 +36,6 @@ class Title(models.Model):
         blank=True,
         null=True,
     )
-    rating = models.IntegerField(
-        validators=[
-            MaxValueValidator(10),
-            MinValueValidator(1),
-        ],
-        null=True,
-    )
 
 
 class GenreTitle(models.Model):
