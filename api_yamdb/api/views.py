@@ -1,3 +1,4 @@
+from django.db.models import Avg
 from django.conf import settings
 from django.core.mail import send_mail
 from django.shortcuts import get_object_or_404
@@ -13,7 +14,6 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from .filters import TitleFilter
 from .permissions import (
     AuthorModeratorOrReadOnly,
-    AuthorOrReadOnly,
     IsAdmin,
 )
 from .serializers import (
@@ -40,17 +40,27 @@ class MyMixinsSet(
     mixins.CreateModelMixin,
     mixins.DestroyModelMixin,
 ):
-    pass
-
-
-class CategoryViewSet(MyMixinsSet):
-    queryset = Category.objects.all()
-    serializer_class = CategorySerializer
     pagination_class = LimitOffsetPagination
     permission_classes = (IsAdmin,)
     filter_backends = (filters.SearchFilter,)
     search_fields = ("name",)
     lookup_field = "slug"
+
+
+class CategoryViewSet(MyMixinsSet):
+    queryset = Category.objects.all()
+    serializer_class = CategorySerializer
+
+    def get_permissions(self):
+        if self.action == "list" or self.action == "retrieve":
+            return (permissions.AllowAny(),)
+
+        return super().get_permissions()
+
+
+class GenreViewSet(MyMixinsSet):
+    queryset = Genre.objects.all()
+    serializer_class = GenreSerializer
 
     def get_permissions(self):
         if self.action == "list" or self.action == "retrieve":
@@ -60,7 +70,7 @@ class CategoryViewSet(MyMixinsSet):
 
 
 class TitleViewSet(viewsets.ModelViewSet):
-    queryset = Title.objects.all()
+    queryset = Title.objects.annotate(rating=Avg("reviews__score"))
     serializer_class = TitleSerializer
     permission_classes = (IsAdmin,)
     pagination_class = LimitOffsetPagination
@@ -79,31 +89,10 @@ class TitleViewSet(viewsets.ModelViewSet):
         return super().get_permissions()
 
 
-class GenreViewSet(MyMixinsSet):
-    queryset = Genre.objects.all()
-    serializer_class = GenreSerializer
-    pagination_class = LimitOffsetPagination
-    permission_classes = (IsAdmin,)
-    filter_backends = (filters.SearchFilter,)
-    search_fields = ("name",)
-    lookup_field = "slug"
-
-    def get_permissions(self):
-        if self.action == "list" or self.action == "retrieve":
-            return (permissions.AllowAny(),)
-
-        return super().get_permissions()
-
-
 class ReviewViewSet(viewsets.ModelViewSet):
     serializer_class = ReviewSerializer
-    permission_classes = (IsAdmin|AuthorModeratorOrReadOnly,)
+    permission_classes = (AuthorModeratorOrReadOnly | IsAdmin,)
     pagination_class = LimitOffsetPagination
-
-    # def get_permissions(self):
-    #     if self.action == "update":
-    #         return (IsAdmin,)
-    #     return super().get_permissions()
 
     def get_title(self):
         return get_object_or_404(Title, id=self.kwargs.get("title_id"))
@@ -123,7 +112,7 @@ class ReviewViewSet(viewsets.ModelViewSet):
 
 class CommentViewSet(viewsets.ModelViewSet):
     serializer_class = CommentSerializer
-    permission_classes = (IsAdmin|AuthorModeratorOrReadOnly,)
+    permission_classes = (AuthorModeratorOrReadOnly | IsAdmin,)
     pagination_class = LimitOffsetPagination
 
     def get_review(self):
@@ -132,11 +121,6 @@ class CommentViewSet(viewsets.ModelViewSet):
             id=self.kwargs.get("review_id"),
             title_id=self.kwargs.get("title_id"),
         )
-
-    # def get_permissions(self):
-    #     if self.action == "update":
-    #         return (IsAdmin,)
-    #     return super().get_permissions()
 
     def perform_create(self, serializer):
         serializer.save(author=self.request.user, review=self.get_review())
@@ -196,7 +180,7 @@ class GetJWTTokenView(views.APIView):
 class UsersViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all()
     serializer_class = UserViewSerializer
-    permission_classes = (IsAdmin,)
+    permission_classes = (IsAdmin, permissions.IsAuthenticated)
     pagination_class = LimitOffsetPagination
     filter_backends = (filters.SearchFilter,)
     search_fields = ("username",)
@@ -232,9 +216,10 @@ class UsersViewSet(viewsets.ModelViewSet):
         serializer.is_valid(raise_exception=True)
 
         # если пользователь admin, то можно менять поле role,
-        # в остальных случаях нелья
-        if request.user.role == RoleChoices.ADMIN or request.user.is_staff:
+        # в остальных случаях нельзя
+        if request.user.is_admin:
             serializer.save()
         else:
             serializer.save(role=self.request.user.role)
+
         return Response(serializer.data, status=status.HTTP_200_OK)

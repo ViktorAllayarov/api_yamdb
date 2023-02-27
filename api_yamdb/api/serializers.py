@@ -1,5 +1,6 @@
 from rest_framework import serializers
 from rest_framework.exceptions import NotFound
+from rest_framework.validators import UniqueValidator
 
 from reviews.models import Category, Title, Genre, GenreTitle, Review, Comment
 from users.models import User
@@ -20,20 +21,11 @@ class GenreSerializer(serializers.ModelSerializer):
 class TitleListSerializer(serializers.ModelSerializer):
     genre = GenreSerializer(many=True)
     category = CategorySerializer()
-    rating = serializers.SerializerMethodField()
+    rating = serializers.IntegerField()
 
     class Meta:
         fields = "__all__"
         model = Title
-
-    def get_rating(self, obj):
-        reviews = Review.objects.filter(title_id=obj.id)
-        score = 0
-        if reviews:
-            for review in reviews:
-                score += review.score
-            return score // len(reviews)
-        return None
 
 
 class TitleSerializer(serializers.ModelSerializer):
@@ -48,7 +40,6 @@ class TitleSerializer(serializers.ModelSerializer):
     category = serializers.SlugRelatedField(
         required=True, slug_field="slug", queryset=Category.objects.all()
     )
-    rating = serializers.IntegerField(required=False, default=0)
 
     class Meta:
         model = Title
@@ -95,17 +86,23 @@ class CommentSerializer(serializers.ModelSerializer):
         fields = ("id", "text", "author", "pub_date")
 
 
-class AuthSignupSerializer(serializers.ModelSerializer):
-    class Meta:
-        fields = (
-            "email",
-            "username",
-        )
-        model = User
+class AuthSignupSerializer(serializers.Serializer):
+    email = serializers.EmailField(
+        required=True,
+        max_length=254,
+        validators=[UniqueValidator(queryset=User.objects.all())],
+    )
+    username = serializers.RegexField(
+        regex=r"^[\w.@+-]+\Z",
+        required=True,
+        max_length=150,
+        validators=[UniqueValidator(queryset=User.objects.all())],
+    )
 
     def validate(self, data):
         if data.get("username") == "me":
             raise serializers.ValidationError("Ошибка: недопустимое имя")
+
         return data
 
 

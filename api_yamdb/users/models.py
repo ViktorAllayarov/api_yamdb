@@ -23,7 +23,7 @@ class User(AbstractUser):
         unique=True,
         validators=[
             RegexValidator(
-                regex=r"^[\w.@+-]+",
+                regex=r"^[\w.@+-]+\Z",
                 message=USERNAME_ERR_MESS,
             )
         ],
