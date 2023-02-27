@@ -1,54 +1,19 @@
 from rest_framework import permissions
 
-from users.models import RoleChoices
 
-
-class IsAnonymous(permissions.BasePermission):
-    """Класс реализует права только для неавторизованных пользователей."""
-
-    message = "Ошибка: Пользователь не должен быть авторизован."
-
-    def has_permission(self, request, view):
-        return (
-            request.user.is_anonymous
-            or request.user.role == RoleChoices.ADMIN
-            or request.user.is_staff
-        )
-
-
-class IsAdminOrReadOnly(permissions.BasePermission):
-    """
-    Класс реализует права неавторизованным пользователям и выше - на чтение,
-    администратору - не безопасные методы.
-    """
-
+class AuthorModeratorOrReadOnly(permissions.BasePermission):
     def has_permission(self, request, view):
         return (
             request.method in permissions.SAFE_METHODS
             or request.user.is_authenticated
-            and (
-                request.user.role == RoleChoices.ADMIN or request.user.is_staff
-            )
-        )
-
-
-class AuthorPlusOrReadOnly(permissions.BasePermission):
-    def has_permission(self, request, view):
-        return (
-            request.method in permissions.SAFE_METHODS
-            or request.user.is_authenticated
+            or (request.user.is_authenticated and request.user.is_moderator)
         )
 
     def has_object_permission(self, request, view, obj):
         return (
             request.method in permissions.SAFE_METHODS
             or obj.author == request.user
-            or request.user.is_authenticated
-            and (
-                request.user.role == RoleChoices.MODERATOR
-                or request.user.role == RoleChoices.ADMIN
-                or request.user.is_staff
-            )
+            or (request.user.is_authenticated and request.user.is_moderator)
         )
 
 
@@ -58,6 +23,7 @@ class IsAdmin(permissions.BasePermission):
     message = "Ошибка: Пользователь должен быть администратором."
 
     def has_permission(self, request, view):
-        return request.user.is_authenticated and (
-            request.user.role == RoleChoices.ADMIN or request.user.is_staff
-        )
+        return request.user.is_authenticated and request.user.is_admin
+
+    def has_object_permission(self, request, view, obj):
+        return request.user.is_admin
