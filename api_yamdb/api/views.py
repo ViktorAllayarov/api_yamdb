@@ -4,11 +4,16 @@ from django.core.mail import send_mail
 from django.shortcuts import get_object_or_404
 from rest_framework.decorators import action
 from rest_framework.response import Response
-from rest_framework import filters, permissions, status, views, viewsets
+from rest_framework import (
+    filters,
+    permissions,
+    status,
+    views,
+    viewsets,
+    mixins,
+)
 from rest_framework.pagination import LimitOffsetPagination
 from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework_simplejwt.tokens import RefreshToken
-from rest_framework import status, views, mixins, viewsets
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from .filters import TitleFilter
@@ -27,7 +32,7 @@ from .serializers import (
     ReviewSerializer,
     CommentSerializer,
 )
-from users.models import RoleChoices, User
+from users.models import User
 from reviews.models import Category, Title, Genre, Review
 
 EMAIL_TITLE = "Приветствуем {}"
