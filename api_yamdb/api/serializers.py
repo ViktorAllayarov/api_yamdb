@@ -1,5 +1,6 @@
 from rest_framework import serializers
 from rest_framework.exceptions import NotFound
+from django.db.models import Avg
 
 from reviews.models import Category, Title, Genre, GenreTitle, Review, Comment
 from users.models import User
@@ -28,11 +29,9 @@ class TitleListSerializer(serializers.ModelSerializer):
 
     def get_rating(self, obj):
         reviews = Review.objects.filter(title_id=obj.id)
-        score = 0
         if reviews:
-            for review in reviews:
-                score += review.score
-            return score // len(reviews)
+            score = reviews.aggregate(Avg('score'))['score__avg']
+            return score
         return None
 
 
