@@ -116,8 +116,6 @@ class GetJWTTokenSerializer(serializers.Serializer):
     def validate(self, data):
         if not User.objects.filter(username=data.get("username")).exists():
             raise NotFound("Ошибка: не верный username")
-        if not User.objects.filter(username=data.get("username")).exists():
-            raise NotFound("Ошибка: не верный username")
         if not User.objects.filter(
             password=data.get("confirmation_code")
         ).exists():

@@ -12,10 +12,9 @@ from rest_framework_simplejwt.tokens import RefreshToken
 
 from .filters import TitleFilter
 from .permissions import (
-    IsAnonymous,
-    AuthorPlusOrReadOnly,
+    AuthorModeratorOrReadOnly,
+    AuthorOrReadOnly,
     IsAdmin,
-    IsAdminOrReadOnly,
 )
 from .serializers import (
     AuthSignupSerializer,
@@ -48,16 +47,22 @@ class CategoryViewSet(MyMixinsSet):
     queryset = Category.objects.all()
     serializer_class = CategorySerializer
     pagination_class = LimitOffsetPagination
-    permission_classes = (IsAdminOrReadOnly,)
+    permission_classes = (IsAdmin,)
     filter_backends = (filters.SearchFilter,)
     search_fields = ("name",)
     lookup_field = "slug"
+
+    def get_permissions(self):
+        if self.action == "list" or self.action == "retrieve":
+            return (permissions.AllowAny(),)
+
+        return super().get_permissions()
 
 
 class TitleViewSet(viewsets.ModelViewSet):
     queryset = Title.objects.all()
     serializer_class = TitleSerializer
-    permission_classes = (IsAdminOrReadOnly,)
+    permission_classes = (IsAdmin,)
     pagination_class = LimitOffsetPagination
     filter_backends = (DjangoFilterBackend,)
     filterset_class = TitleFilter
@@ -67,21 +72,38 @@ class TitleViewSet(viewsets.ModelViewSet):
             return TitleListSerializer
         return TitleSerializer
 
+    def get_permissions(self):
+        if self.action == "list" or self.action == "retrieve":
+            return (permissions.AllowAny(),)
+
+        return super().get_permissions()
+
 
 class GenreViewSet(MyMixinsSet):
     queryset = Genre.objects.all()
     serializer_class = GenreSerializer
     pagination_class = LimitOffsetPagination
-    permission_classes = (IsAdminOrReadOnly,)
+    permission_classes = (IsAdmin,)
     filter_backends = (filters.SearchFilter,)
     search_fields = ("name",)
     lookup_field = "slug"
 
+    def get_permissions(self):
+        if self.action == "list" or self.action == "retrieve":
+            return (permissions.AllowAny(),)
+
+        return super().get_permissions()
+
 
 class ReviewViewSet(viewsets.ModelViewSet):
     serializer_class = ReviewSerializer
-    permission_classes = (AuthorPlusOrReadOnly,)
+    permission_classes = (IsAdmin|AuthorModeratorOrReadOnly,)
     pagination_class = LimitOffsetPagination
+
+    # def get_permissions(self):
+    #     if self.action == "update":
+    #         return (IsAdmin,)
+    #     return super().get_permissions()
 
     def get_title(self):
         return get_object_or_404(Title, id=self.kwargs.get("title_id"))
@@ -101,7 +123,7 @@ class ReviewViewSet(viewsets.ModelViewSet):
 
 class CommentViewSet(viewsets.ModelViewSet):
     serializer_class = CommentSerializer
-    permission_classes = (AuthorPlusOrReadOnly,)
+    permission_classes = (IsAdmin|AuthorModeratorOrReadOnly,)
     pagination_class = LimitOffsetPagination
 
     def get_review(self):
@@ -110,6 +132,11 @@ class CommentViewSet(viewsets.ModelViewSet):
             id=self.kwargs.get("review_id"),
             title_id=self.kwargs.get("title_id"),
         )
+
+    # def get_permissions(self):
+    #     if self.action == "update":
+    #         return (IsAdmin,)
+    #     return super().get_permissions()
 
     def perform_create(self, serializer):
         serializer.save(author=self.request.user, review=self.get_review())
@@ -151,8 +178,6 @@ class GetJWTTokenView(views.APIView):
     Класс для получения JWT токена в обмен
     на username и confirmation code.
     """
-
-    permission_classes = (IsAnonymous,)
 
     def post(self, request):
         serializer = GetJWTTokenSerializer(data=request.data)
